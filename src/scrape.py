@@ -1,26 +1,118 @@
 import urllib3
 from bs4 import BeautifulSoup
 import pandas as pd
+import json
+import os
+
+CONFIG = "config.json"
+CWD = os.getcwd()
 
 class Craigslist:
-    
-    def __init__(self, url: str):
-        self.url = url
+    """This class scrapes Cragslist for listing given preferences.
+    """    
+    def __init__(self):
+        json = read_json(CONFIG)
+        self.pref = json["PREFERENCES"]
     
     def run(self):
-        data = self.scrape()
-        self.parse(data)
+        """Performs the actual scraping operations. Kept seperate to make
+        debuggin easier.
+        """
+        self.driver = webdriver.PhantomJS(CWD + "/phantomjs/bin/phantomjs.exe")
+        for city in self.pref["CITIES"]:
+            assert isinstance(city, str)
+            city = city.lower()
+            header = city + ".craigslist.org/search/"
+            for category in self.pref["CATEGORIES"]:
+                assert isinstance(category, str)
+                category = category.lower()
+                queries = "?query=" + "+".join(self.pref["KEYWORDS"])
+                url = header + category + queries
+                html = scrape(url)
+                posts = self.get_postings(html)
+                posts = [x for x in posts if x.startswith("https://" + city)]
+                posts = list(set(posts))
+                text_bodies = []
+                contacts = []
+                for post in posts:
+                    html = scrape(post)
+                    text_bodies.append(self.get_post_body(html))
+                    contacts.append(self.get_post_contact(html))
 
-    def scrape(self) -> str:
-        http = urllib3.PoolManager()
-        r = http.request("GET", self.url)
-        return r.data
+    def get_post_contact(self, html: str) -> str:
+        raise NotImplementedError
 
-    def parse(self, raw: str):
-        soup = BeautifulSoup(raw, "html.parser")
-        print(soup.find(id="sortable-results"))
+    def get_post_body(self, html: str) -> str:
+        """Gets a post's text body.
 
+        Parameters
+        ----------
+        html : str
+            the html of the post page
+
+        Returns
+        -------
+        str
+            the post body
+        """        
+        soup = BeautifulSoup(html, "html.parser")
+        body = soup.find(id="postingbody")
+        return body.get_text()
+
+    def get_postings(self, html: str) -> list:
+        """Returns the postings urls from the query page.
+
+        Parameters
+        ----------
+        html : str
+            the search page html 
+
+        Returns
+        -------
+        list
+            all the posting urls
+        """        
+        soup = BeautifulSoup(html, "html.parser")
+        results = soup.find(id="sortable-results")
+        postings = results.find_all("a")
+        posting_urls = [post.get("href") for post in postings]
+        posting_urls = [post for post in posting_urls if post != "#"]
+        return posting_urls
+
+def scrape(url: str) -> str:
+    """Returns the html as a string of a url.
+
+    Parameters
+    ----------
+    url : str
+        url to scrape
+
+    Returns
+    -------
+    str
+        html content of the webpage
+    """    
+    http = urllib3.PoolManager()
+    r = http.request("GET", url)
+    return r.data
+
+def read_json(path: str) -> dict:
+    """Returns data stored in a json file.
+
+    Parameters
+    ----------
+    path : str
+        path to the json file
+
+    Returns
+    -------
+    dict
+        contents of the json file
+    """    
+    with open(path) as f:
+        data = json.load(f)
+    return data
 
 if __name__ == "__main__":
-    auto = Craigslist("https://seattle.craigslist.org/search/jjj?query=developer")
+    auto = Craigslist()
     auto.run()
