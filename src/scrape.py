@@ -18,7 +18,8 @@ class Craigslist:
         """Performs the actual scraping operations. Kept seperate to make
         debuggin easier.
         """
-        self.driver = webdriver.PhantomJS(CWD + "/phantomjs/bin/phantomjs.exe")
+        text_bodies = []
+        contacts = []
         for city in self.pref["CITIES"]:
             assert isinstance(city, str)
             city = city.lower()
@@ -32,12 +33,15 @@ class Craigslist:
                 posts = self.get_postings(html)
                 posts = [x for x in posts if x.startswith("https://" + city)]
                 posts = list(set(posts))
-                text_bodies = []
-                contacts = []
                 for post in posts:
                     html = scrape(post)
                     text_bodies.append(self.get_post_body(html))
-                    contacts.append(self.get_post_contact(html))
+                    # contacts.append(self.get_post_contact(html))
+        export = pd.DataFrame(
+            data=text_bodies, 
+            columns=["body"]
+        )
+        export.to_csv("export.csv")
 
     def get_post_contact(self, html: str) -> str:
         raise NotImplementedError
