@@ -24,25 +24,20 @@ class Craigslist:
             assert isinstance(city, str)
             city = city.lower()
             header = city + ".craigslist.org/d/computer-gigs/search/cpg"
-            for category in self.pref["CATEGORIES"]:
-                assert isinstance(category, str)
-                category = category.lower()
-                queries = "?query=" + "+".join(self.pref["KEYWORDS"])
-                html = scrape(header)
-                posts = self.get_postings(html)
-                posts = [x for x in posts if x.startswith("https://" + city)]
-                posts = list(set(posts))
-                for post in posts:
-                    html = scrape(post)
-                    text_bodies.append(self.get_post_body(html))
-                    # contacts.append(self.get_post_contact(html))
+            queries = "?query=" + "+".join(self.pref["KEYWORDS"])
+            html = scrape(header)
+            posts = self.get_postings(html)
+            posts = [x for x in posts if x.startswith("https://" + city)]
+            posts = list(set(posts))
+            for post in posts:
+                html = scrape(post)
+                text_bodies.append(self.get_post_body(html))
         export = pd.DataFrame(
             data=text_bodies, 
             columns=["body"]
         )
         print(export)
         export.to_csv("export.csv")
-
 
     def get_post_contact(self, html: str) -> str:
         raise NotImplementedError
