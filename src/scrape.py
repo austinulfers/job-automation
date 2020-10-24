@@ -23,13 +23,12 @@ class Craigslist:
         for city in self.pref["CITIES"]:
             assert isinstance(city, str)
             city = city.lower()
-            header = city + ".craigslist.org/search/"
+            header = city + ".craigslist.org/d/computer-gigs/search/cpg"
             for category in self.pref["CATEGORIES"]:
                 assert isinstance(category, str)
                 category = category.lower()
                 queries = "?query=" + "+".join(self.pref["KEYWORDS"])
-                url = header + category + queries
-                html = scrape(url)
+                html = scrape(header)
                 posts = self.get_postings(html)
                 posts = [x for x in posts if x.startswith("https://" + city)]
                 posts = list(set(posts))
@@ -41,7 +40,9 @@ class Craigslist:
             data=text_bodies, 
             columns=["body"]
         )
+        print(export)
         export.to_csv("export.csv")
+
 
     def get_post_contact(self, html: str) -> str:
         raise NotImplementedError
