@@ -1,8 +1,10 @@
 import urllib3
 from bs4 import BeautifulSoup
+import numpy as np
 import pandas as pd
 import json
 import os
+import re
 
 CONFIG = "config.json"
 CWD = os.getcwd()
@@ -24,19 +26,17 @@ class Craigslist:
             assert isinstance(city, str)
             city = city.lower()
             header = city + ".craigslist.org/d/computer-gigs/search/cpg"
-            queries = "?query=" + "+".join(self.pref["KEYWORDS"])
             html = scrape(header)
-            posts = self.get_postings(html)
-            posts = [x for x in posts if x.startswith("https://" + city)]
-            posts = list(set(posts))
+            headers, posts = self.get_postings(html)
+            assert len(headers)==len(posts), "title and post length mismatch"
             for post in posts:
                 html = scrape(post)
                 text_bodies.append(self.get_post_body(html))
-        export = pd.DataFrame(
-            data=text_bodies, 
-            columns=["body"]
-        )
-        print(export)
+        export = pd.DataFrame({
+            "body": text_bodies,
+            "title": headers,
+            "url":posts
+        })
         export.to_csv("export.csv")
 
     def get_post_contact(self, html: str) -> str:
@@ -56,7 +56,7 @@ class Craigslist:
         return body.get_text()
 
     def get_postings(self, html: str) -> list:
-        """Returns the postings urls from the query page.
+        """Yields the posting information from the query page.
 
         Args:
             html (str): the search page html 
@@ -67,9 +67,12 @@ class Craigslist:
         soup = BeautifulSoup(html, "html.parser")
         results = soup.find(id="sortable-results")
         postings = results.find_all("a")
-        posting_urls = [post.get("href") for post in postings]
-        posting_urls = [post for post in posting_urls if post != "#"]
-        return posting_urls
+        headers = [i.text.replace("\n", "") for i in postings]
+        exclude = ["", "restorerestore this posting"]
+        headers = [i for i in headers if i not in exclude]
+        yield headers
+        posting_urls = [post.get("href") for post in postings if post.text in headers]
+        yield posting_urls
 
 def scrape(url: str) -> str:
     """Returns the html as a string of a url.
