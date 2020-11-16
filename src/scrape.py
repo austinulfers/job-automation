@@ -16,7 +16,7 @@ class Craigslist:
     
     def run(self):
         """Performs the actual scraping operations. Kept seperate to make
-        debuggin easier.
+        debugging easier.
         """
         text_bodies = []
         contacts = []
@@ -42,18 +42,14 @@ class Craigslist:
     def get_post_contact(self, html: str) -> str:
         raise NotImplementedError
 
-    def get_post_body(self, html: str) -> str:
+    def get_post_body(self, html: str) -> str: 
         """Gets a post's text body.
 
-        Parameters
-        ----------
-        html : str
-            the html of the post page
+        Args:
+        html (str): the html of the post page
 
-        Returns
-        -------
-        str
-            the post body
+        Returns:
+            str: the post body
         """        
         soup = BeautifulSoup(html, "html.parser")
         body = soup.find(id="postingbody")
@@ -62,15 +58,11 @@ class Craigslist:
     def get_postings(self, html: str) -> list:
         """Returns the postings urls from the query page.
 
-        Parameters
-        ----------
-        html : str
-            the search page html 
+        Args:
+            html (str): the search page html 
 
-        Returns
-        -------
-        list
-            all the posting urls
+        Returns:
+        list: all the posting urls
         """        
         soup = BeautifulSoup(html, "html.parser")
         results = soup.find(id="sortable-results")
@@ -82,15 +74,11 @@ class Craigslist:
 def scrape(url: str) -> str:
     """Returns the html as a string of a url.
 
-    Parameters
-    ----------
-    url : str
-        url to scrape
+    Args:
+        url (str): url to scrape
 
-    Returns
-    -------
-    str
-        html content of the webpage
+    Returns:
+        str: html content of the webpage
     """    
     http = urllib3.PoolManager()
     r = http.request("GET", url)
@@ -99,15 +87,11 @@ def scrape(url: str) -> str:
 def read_json(path: str) -> dict:
     """Returns data stored in a json file.
 
-    Parameters
-    ----------
-    path : str
-        path to the json file
+    Args:
+        path (str): path to the json file
 
-    Returns
-    -------
-    dict
-        contents of the json file
+    Returns:
+        dict: contents of the json file
     """    
     with open(path) as f:
         data = json.load(f)
